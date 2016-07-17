@@ -1,17 +1,24 @@
-from selenium import webdriver
+import cv2
 import unittest
+from crawler import Crawler
+
 
 class OneRecordTest(unittest.TestCase):
   def setUp(self):
     #self.browser = webdriver.Chrome()
+    self.crawler = Crawler()
     pass
 
   def setDown(self):
     #self.browser.quit()
     pass
 
-  def test_find_records():
+  def test_find_records(self):
+    # 開啟瀏覽器
+    self.crawler.open_browser()    
     # 讀取第一筆清單上的名稱  list.csv
+    records = self.crawler.get_records("./list.csv")
+    self.assertEqual(len(records),2)
     # 讀取最後一筆已經比對成功的名單 list_success.csv
     # 找出接下來要進行的清單
     # 迴圈開始
