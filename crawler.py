@@ -1,10 +1,14 @@
 from selenium import webdriver
+from selenium.common.exceptions import UnexpectedAlertPresentException
 import os
 from  PIL import Image 
 from io import BytesIO
 import numpy as np
 import cv2
 import base64
+import xlrd
+import xlsxwriter as xw
+import time
 
 from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
@@ -40,7 +44,9 @@ class Crawler:
     loc = chapcha.location
     # NOTE: its img[y: y + h, x: x + w]
     # 剪下 寬88 高40 
-    crop_img = numpy_array[loc['y']:loc['y']+40,loc['x']:loc['x']+88] 
+    # retina上跑要*2
+    t = 2
+    crop_img = numpy_array[loc['y']*t:loc['y']*t+40*t,loc['x']*t:loc['x']*t+88*t] 
     #cv2.imwrite('crop.png',crop_img)
     return crop_img
   
@@ -104,7 +110,7 @@ class Crawler:
     basaddr = self.browser.find_element_by_id("ctl00_ContentPlaceHolder1_lblDoc_Basaddr").text
     return [name,sex,ref,spc,dep,pro,basaddr,link]
 
-  def get_records(self,file_path):
+  def get_records_with_plain(self,file_path):
     records = []
     with open(file_path,'r') as f:
       i=0
@@ -113,53 +119,91 @@ class Crawler:
         if i==1:
           continue
         else:
-          records.append(line.strip().split(","))
-        
+          records.append(line.strip().split(","))        
     return records
 
+  def get_records_with_xlsx(self,file_path):
+    records = []
+    file = xlrd.open_workbook(file_path)
+    sheet = file.sheets()[0]
+    nrows = sheet.nrows
+    for n in range(1,sheet.nrows):
+      data = [sheet.cell(n,i).value for i in range(3)]
+      records.append(data)
+    return records
+  
+  def initiaze_output_file(self,file_path):
+    file = xw.Workbook(file_path)
+    sheet = file.add_worksheet()
+    header = ["姓名","性別","證書類別","專科資格","執業登記科別","執登類別","職業縣市","連結","原來序號","原來姓名","原來性別","可能是"]
+    for i in range(len(header)):
+      sheet.write(0,i,header[i])
+    file.close()
+
+  def initiaze_output_file_plain(self,file_path):
+    with open(file_path,"w+") as f:
+      header = ["姓名","性別","證書類別","專科資格","執業登記科別","執登類別","職業縣市","連結","原來序號","原來姓名","原來性別","可能是"]
+      f.write(",".join(header)+"\n")
+    
+
   def run(self):
-    self.open_browser()
-    records = self.get_records("./list.csv")
-    with open('./medicine.csv','w+') as f:
-      f.write(",".join(["姓名","性別","證書類別","專科資格","執業登記科別","執登類別","職業縣市","連結","原來姓名","原來縣市","原來職業"])+"\n")
+    #self.open_browser()
+    records = self.get_records_with_xlsx("./1.xlsx")
+    self.initiaze_output_file_plain("./medicine.csv")
 
     for record in records:    
-      print(record[0])
-      print(record[1])
-      print(record[2])      
+      [index,name,gender] = record
+      index = int(index)
+      print(index)
+      print(name)
+      print(gender)      
       while 1:
         self.go_main_page()
-        self.input_username(record[0])
+        self.input_username(name)
         img = self.extract_chapcha()
         img_base64 = self.img_numpy_to_base64(img)
         key = self.read_chapcha_text(img_base64)
         print("key:%s"%key)
         try:
           links = self.extract_links(key)
-        except selenium.common.exceptions.UnexpectedAlertPresentException:
+        except UnexpectedAlertPresentException:
           cv2.imshow("cropped",img)
           cv2.imwrite('./gg.png',img)
+          self.browser.quit()
+          self.open_browser()
           print("QRcode解讀錯誤")
+          time.sleep(2)
           continue
         #寫出統計量寫出所有可能  
+        count = 0
         with open('./medicine.csv','a+') as f:    
           for link in links:
             print("link:%s"%link)
             data = self.getUserInfo(link)
-            data.append(record[0])
-            data.append(record[1])
-            data.append(record[2])
-            f.write(",".join(data)+"\n")
+            data.append(str(index))
+            data.append(name)
+            data.append(gender)
+            #轉換性別
+            if data[1]=="男":
+              data[1] = "M"
+            elif data[1] == "女":
+              data[1] = "F"
+            #判斷真偽
+            if gender == data[1] and data[0] == name:
+              data.append("Y") 
+              count = count + 1
+            else:
+              data.append("F")
+            f.write(",".join(data)+"\n")      
+            f.flush()      
         #寫出統計量
-        with open('./stat_medicine.csv','a+') as f:
-          data = []
-          data.append(record[0])
-          data.append(record[1])
-          data.append(record[2])
-          data.append(str(len(links)))
-          f.write(",".join(data)+"\n")
+        #寫出資料
+        with open("./stat_medicine.csv","a+") as f:                
+          f.write(",".join([str(index),name,gender,str(count)])+"\n")
+        
         break
-
+      
+      
 if __name__ == "__main__":
   crawler = Crawler()
   crawler.run()
