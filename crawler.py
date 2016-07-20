@@ -156,7 +156,7 @@ class Crawler:
     #self.open_browser()
     records = self.get_records_with_xlsx("./1.xlsx")
     #records = [records[302],records[775]]
-    #mutiple_list = [52, 103, 159, 166, 207, 223, 233, 254, 296, 432, 525, 534, 629, 644, 708, 749, 787, 847, 919, 927, 998, 1023, 1034, 1040, 1043, 1059, 1155, 1209, 1318, 1391, 1458, 1488, 1501, 1516, 1552, 1565, 1573, 1661, 1729, 1731, 1736, 1770, 1839, 1843, 1845, 1846, 1902, 1903, 1922, 1934, 1943, 1987, 1995, 1999, 2058, 2118, 2122, 2160, 2255, 2265, 2270, 2291, 2300, 2301, 2310, 2361, 2410, 2443, 2480, 2568, 2578, 2583, 2603, 2639, 2644, 2665, 2674, 2760, 2799, 2822, 2901, 2939]
+    mutiple_list = [52, 103, 159, 166, 207, 223, 233, 254, 296, 432, 525, 534, 629, 644, 708, 749, 787, 847, 919, 927, 998, 1023, 1034, 1040, 1043, 1059, 1155, 1209, 1318, 1391, 1458, 1488, 1501, 1516, 1552, 1565, 1573, 1661, 1729, 1731, 1736, 1770, 1839, 1843, 1845, 1846, 1902, 1903, 1922, 1934, 1943, 1987, 1995, 1999, 2058, 2118, 2122, 2160, 2255, 2265, 2270, 2291, 2300, 2301, 2310, 2361, 2410, 2443, 2480, 2568, 2578, 2583, 2603, 2639, 2644, 2665, 2674, 2760, 2799, 2822, 2901, 2939]
     #records = [records[0],records[51],records[103]]
     r = []
     for m in mutiple_list:
@@ -183,18 +183,18 @@ class Crawler:
           ls = self.extract_links()
           if len(ls)>0:
             links.extend(ls)
-            count = self.browser.find_element_by_id("ctl00_ContentPlaceHolder1_NetPager1_lblPageCount").text
-            count = int(re.search("(\d+)",count).group(0))
-            index = self.browser.find_element_by_id("ctl00_ContentPlaceHolder1_NetPager1_lblCurrentIndex").text
-            index = int(re.search("(\d+)",index).group(0))            
-            while  index < count :
+            count_links = self.browser.find_element_by_id("ctl00_ContentPlaceHolder1_NetPager1_lblPageCount").text
+            count_links = int(re.search("(\d+)",count_links).group(0))
+            index_links = self.browser.find_element_by_id("ctl00_ContentPlaceHolder1_NetPager1_lblCurrentIndex").text
+            index_links = int(re.search("(\d+)",index_links).group(0))            
+            while  index_links < count_links :
               self.browser.find_element_by_id("ctl00_ContentPlaceHolder1_NetPager1_lnkbtnNext").click()
               ls = self.extract_links()
               links.extend(ls)
-              count = self.browser.find_element_by_id("ctl00_ContentPlaceHolder1_NetPager1_lblPageCount").text
-              count = int(re.search("(\d+)",count).group(0))
-              index = self.browser.find_element_by_id("ctl00_ContentPlaceHolder1_NetPager1_lblCurrentIndex").text
-              index = int(re.search("(\d+)",index).group(0))
+              count_links = self.browser.find_element_by_id("ctl00_ContentPlaceHolder1_NetPager1_lblPageCount").text
+              count_links = int(re.search("(\d+)",count_links).group(0))
+              index_links = self.browser.find_element_by_id("ctl00_ContentPlaceHolder1_NetPager1_lblCurrentIndex").text
+              index_links = int(re.search("(\d+)",index_links).group(0))
           print("# of links %d"%len(links))
 
         except UnexpectedAlertPresentException:
